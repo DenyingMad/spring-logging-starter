@@ -1,6 +1,7 @@
 package ru.danny.logging.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.cloud.stream.binder.Binder;
@@ -17,11 +18,14 @@ import ru.danny.logging.messaging.OutgoingMessagingLogger;
 @ConditionalOnClass({Binder.class})
 public class MessagingLoggingConfig {
 
+	@Value("${logging.messaging.max-length:1000}")
+	private int messageMaxLength;
+
 	@Bean
 	public MessagingLogger messagingLogger(ObjectMapper objectMapper,
 		ApplicationContext applicationContext) {
 		var bindingServiceProperties = applicationContext.getBean(BindingServiceProperties.class);
-		return new MessagingLogger(objectMapper, bindingServiceProperties);
+		return new MessagingLogger(objectMapper, bindingServiceProperties, messageMaxLength);
 	}
 
 	@Bean

@@ -6,15 +6,16 @@ import feign.Response;
 import feign.Util;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import ru.danny.logging.utils.BodyLogUtils;
 import ru.danny.logging.utils.FeignUtils;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.charset.Charset;
 import java.util.Set;
 
 import static feign.Util.UTF_8;
-import static feign.Util.decodeOrDefault;
 import static ru.danny.logging.utils.LoggingConstants.NO_BODY;
 
 @Slf4j
@@ -22,6 +23,7 @@ import static ru.danny.logging.utils.LoggingConstants.NO_BODY;
 public class FeignLogger extends Logger {
 
 	private final Set<String> excludeHeaders;
+	private final int maxLength;
 
 	@Override
 	protected void log(String s, String s1, Object... objects) {
@@ -30,7 +32,10 @@ public class FeignLogger extends Logger {
 
 	@Override
 	protected void logRequest(String configKey, Level logLevel, Request request) {
-		String body = request.body() != null ? new String(request.body(), request.charset()) : NO_BODY;
+		String contentType = BodyLogUtils.extractContentType(request.headers());
+		String body = request.body() != null
+			? BodyLogUtils.formatBody(request.body(), contentType, request.charset(), maxLength)
+			: NO_BODY;
 		log(configKey, "==> Outgoing request %s %s,\nheaders = [%s],\nbody = %s",
 			request.httpMethod().name(),
 			request.url(),
@@ -48,13 +53,15 @@ public class FeignLogger extends Logger {
 		int status = response.status();
 		if (response.body() != null && !(status == 204 || status == 205)) {
 			byte[] bodyData = Util.toByteArray(response.body().asInputStream());
+			String contentType = BodyLogUtils.extractContentType(response.headers());
+			Charset charset = response.charset() != null ? response.charset() : UTF_8;
 			log(configKey, "<== Request %s %s returned status %d in %dms,\nheaders = [%s],\nbody = %s",
 				response.request().httpMethod().name(),
 				response.request().url(),
 				response.status(),
 				elapsedTime,
 				FeignUtils.getHeadersString(response.headers(), excludeHeaders),
-				decodeOrDefault(bodyData, UTF_8, NO_BODY));
+				BodyLogUtils.formatBody(bodyData, contentType, charset, maxLength));
 			return response.toBuilder().body(bodyData).build();
 		} else {
 			log(configKey, "<== Request %s %s returned status %d in %dms,\nheaders = [%s]",

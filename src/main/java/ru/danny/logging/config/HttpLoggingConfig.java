@@ -19,12 +19,14 @@ public class HttpLoggingConfig {
 	private String loggingRequestRegex;
 	@Value("${logging.request.exclude-headers:authorization, authorization-authdata}")
 	private String loggingRequestExcludeHeaders;
+	@Value("${logging.request.max-length:1000}")
+	private int messageMaxLength;
 
 	@Bean
 	@Order(value = Ordered.HIGHEST_PRECEDENCE + 1) // Order after EntityTraceWebFilter
 	public HttpLogger requestLoggingFilter() {
 		var excludeHeaders = CommonUtils.headersStringToSet(loggingRequestExcludeHeaders);
-		return new HttpLogger(Pattern.compile(loggingRequestRegex), excludeHeaders);
+		return new HttpLogger(Pattern.compile(loggingRequestRegex), excludeHeaders, messageMaxLength);
 	}
 
 }

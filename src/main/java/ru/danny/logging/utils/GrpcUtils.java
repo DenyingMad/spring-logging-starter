@@ -20,10 +20,8 @@ public class GrpcUtils {
 
 	public static <ReqT> String getBody(ReqT message, int maxMessageLength) throws InvalidProtocolBufferException {
 		String jsonMessage = jsonPrinter.print((MessageOrBuilder) message);
-		int maxLength = Math.min(jsonMessage.length(), maxMessageLength);
-		jsonMessage = jsonMessage.substring(0, maxLength);
 		return message != null
-			? jsonMessage
+			? BodyLogUtils.truncate(jsonMessage, maxMessageLength)
 			: NO_BODY;
 	}
 

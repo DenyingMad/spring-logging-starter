@@ -14,11 +14,15 @@ import static ru.danny.logging.utils.LoggingConstants.SERIALIZATION_ERROR;
 public class MessageSerializer {
 
 	public static String getMessageBody(ObjectMapper objectMapper, Object object) {
+		return getMessageBody(objectMapper, object, Integer.MAX_VALUE);
+	}
+
+	public static String getMessageBody(ObjectMapper objectMapper, Object object, int maxLength) {
 		if (object == null) {
 			return NO_BODY;
 		}
 		if (object instanceof String) {
-			return (String) object;
+			return BodyLogUtils.truncate((String) object, maxLength);
 		}
 		if (object instanceof byte[]) {
 			try {
@@ -28,7 +32,7 @@ public class MessageSerializer {
 			}
 		}
 		try {
-			return objectMapper.writeValueAsString(object);
+			return BodyLogUtils.truncate(objectMapper.writeValueAsString(object), maxLength);
 		} catch (JsonProcessingException e) {
 			return SERIALIZATION_ERROR;
 		}

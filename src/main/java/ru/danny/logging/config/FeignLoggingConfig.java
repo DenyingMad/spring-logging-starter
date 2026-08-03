@@ -17,6 +17,8 @@ public class FeignLoggingConfig {
 
 	@Value("${logging.feign.exclude-headers:authorization, authorization-authdata}")
 	private String loggingFeignExcludeHeaders;
+	@Value("${logging.feign.max-length:1000}")
+	private int messageMaxLength;
 
 	@Bean
 	Logger.Level feignLoggerLevel() {
@@ -26,7 +28,7 @@ public class FeignLoggingConfig {
 	@Bean
 	public Logger feignLogger() {
 		var excludeHeaders = CommonUtils.headersStringToSet(loggingFeignExcludeHeaders);
-		return new FeignLogger(excludeHeaders);
+		return new FeignLogger(excludeHeaders, messageMaxLength);
 	}
 
 }

@@ -19,11 +19,13 @@ public class MessagingLogger {
 
 	private final ObjectMapper objectMapper;
 	private final Map<String, String> channelToDestinationMap;
+	private final int maxLength;
 
-	public MessagingLogger(ObjectMapper objectMapper, BindingServiceProperties bindingServiceProperties) {
+	public MessagingLogger(ObjectMapper objectMapper, BindingServiceProperties bindingServiceProperties, int maxLength) {
 		this.objectMapper = objectMapper;
 		this.channelToDestinationMap = bindingServiceProperties.getBindings().entrySet().stream()
 			.collect(Collectors.toMap(Map.Entry::getKey, binding -> binding.getValue().getDestination()));
+		this.maxLength = maxLength;
 	}
 
 	public void logMessageIncoming(Logger log, Message<?> message, String channelName) {
@@ -46,7 +48,7 @@ public class MessagingLogger {
 			? topicName
 			: getDestination(channelName);
 		var headers = MessageUtils.getHeadersString(message.getHeaders());
-		var body = MessageSerializer.getMessageBody(objectMapper, message.getPayload());
+		var body = MessageSerializer.getMessageBody(objectMapper, message.getPayload(), maxLength);
 		log.info("{}, destination = {},\nheaders = [{}],\nbody = {}", prefix, topic, headers, body);
 	}
 

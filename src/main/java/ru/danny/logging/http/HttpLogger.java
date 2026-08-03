@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingResponseWrapper;
+import ru.danny.logging.utils.BodyLogUtils;
 import ru.danny.logging.utils.HttpUtils;
 import ru.danny.logging.utils.MDCUtil;
 
@@ -20,7 +21,6 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import static ru.danny.logging.utils.LoggingConstants.BINARY_DATA;
-import static ru.danny.logging.utils.LoggingConstants.NO_BODY;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -31,6 +31,7 @@ public class HttpLogger extends OncePerRequestFilter {
 
 	private final Pattern loggingRequestPattern;
 	private final Set<String> excludeHeaders;
+	private final int maxLength;
 
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -85,27 +86,25 @@ public class HttpLogger extends OncePerRequestFilter {
 	}
 
 	private String getBody(HttpServletRequest request) throws IOException {
+		if (BodyLogUtils.isBinaryContentType(request.getContentType())) {
+			return BINARY_DATA;
+		}
 		StringBuilder body = new StringBuilder();
 		String line;
 		BufferedReader reader = request.getReader();
 		while ((line = reader.readLine()) != null) {
 			body.append(line.trim());
 		}
-		return !body.isEmpty()
-			? body.toString()
-			: NO_BODY;
+		return BodyLogUtils.formatBody(body.toString(), request.getContentType(), maxLength);
 	}
 
 	private String getBody(ContentCachingResponseWrapper response) {
-		var buffer = response.getContentAsByteArray();
-		if (buffer.length > 0) {
-			try {
-				return new String(buffer, StandardCharsets.UTF_8);
-			} catch (Exception e) {
-				return BINARY_DATA;
-			}
-		}
-		return NO_BODY;
+		return BodyLogUtils.formatBody(
+			response.getContentAsByteArray(),
+			response.getContentType(),
+			StandardCharsets.UTF_8,
+			maxLength
+		);
 	}
 
 }
